@@ -1,0 +1,2 @@
+# No external dependencies required
+# This todo-cli uses only Python standard library
