@@ -56,30 +56,32 @@ python3 todo.py <command> [options]
 
 1. **TodoItem** (todo.py:11-41)
    - Data model for individual todos
-   - Handles markdown serialization via `to_markdown()`
+   - Handles JSON serialization via `to_dict()` and `from_dict()`
 
 2. **TodoManager** (todo.py:44-176)
    - CRUD operations and persistence logic
-   - Parses and saves to `~/.todo/todos.md`
-   - Uses regex to parse markdown format
+   - Saves to `~/.todo/todos.json`
+   - Uses JSON for reliable data serialization/deserialization
 
 ### Data Storage
 
-Todos are stored in Markdown format at `~/.todo/todos.md`:
+Todos are stored in JSON format at `~/.todo/todos.json`:
 
-```markdown
-# TODOs
-
-## YYYY-MM-DD
-
-### [ ] [ID: N] Task description
-- Priority: high|medium|low
-- Tags: tag1, tag2
-- Due: YYYY-MM-DD
-- Created: YYYY-MM-DD HH:MM:SS
+```json
+[
+  {
+    "id": 1,
+    "task": "Task description",
+    "priority": "high",
+    "tags": ["tag1", "tag2"],
+    "due_date": "2024-12-31",
+    "created_at": "2024-12-20T10:30:00.000000",
+    "completed_at": null
+  }
+]
 ```
 
-The format is human-editable - users can modify the file directly.
+JSON format provides reliable parsing and data integrity.
 
 ## Development Notes
 

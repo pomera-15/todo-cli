@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import os
-import re
+import json
 from datetime import datetime, date
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
@@ -33,24 +33,36 @@ class TodoItem:
     def complete(self):
         self.completed_at = datetime.now()
         
-    def to_markdown(self) -> str:
-        checkbox = "[x]" if self.is_completed else "[ ]"
-        lines = [f"### {checkbox} [ID: {self.id}] {self.task}"]
-        lines.append(f"- Priority: {self.priority}")
-        if self.tags:
-            lines.append(f"- Tags: {', '.join(self.tags)}")
-        if self.due_date:
-            lines.append(f"- Due: {self.due_date}")
-        if self.completed_at:
-            lines.append(f"- Completed: {self.completed_at.strftime('%Y-%m-%d %H:%M:%S')}")
-        lines.append(f"- Created: {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
-        return '\n'.join(lines)
+    def to_dict(self) -> Dict:
+        """Convert TodoItem to dictionary for JSON serialization"""
+        return {
+            'id': self.id,
+            'task': self.task,
+            'priority': self.priority,
+            'tags': self.tags,
+            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'created_at': self.created_at.isoformat(),
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict) -> 'TodoItem':
+        """Create TodoItem from dictionary"""
+        return cls(
+            id=data['id'],
+            task=data['task'],
+            priority=data['priority'],
+            tags=data['tags'],
+            due_date=datetime.fromisoformat(data['due_date']).date() if data['due_date'] else None,
+            created_at=datetime.fromisoformat(data['created_at']),
+            completed_at=datetime.fromisoformat(data['completed_at']) if data['completed_at'] else None
+        )
 
 
 class TodoManager:
     def __init__(self, todo_dir: Path = None):
         self.todo_dir = todo_dir or Path.home() / '.todo'
-        self.todo_file = self.todo_dir / 'todos.md'
+        self.todo_file = self.todo_dir / 'todos.json'
         self.todos: List[TodoItem] = []
         self._ensure_dir()
         self._load_todos()
@@ -58,7 +70,7 @@ class TodoManager:
     def _ensure_dir(self):
         self.todo_dir.mkdir(exist_ok=True)
         if not self.todo_file.exists():
-            self.todo_file.write_text("# TODOs\n\n")
+            self.todo_file.write_text('[]')  # Empty JSON array
             
     def _get_next_id(self) -> int:
         if not self.todos:
@@ -66,70 +78,24 @@ class TodoManager:
         return max(todo.id for todo in self.todos) + 1
         
     def _load_todos(self):
-        content = self.todo_file.read_text()
-        self.todos = []
-        
-        # Parse markdown content
-        todo_blocks = re.findall(r'### \[([ x])\] \[ID: (\d+)\] (.+?)(?=\n### |\n## |\Z)', 
-                                content, re.DOTALL)
-        
-        for completed, id_str, block in todo_blocks:
-            lines = block.strip().split('\n')
-            task = lines[0]
-            
-            # Parse attributes
-            priority = 'medium'
-            tags = []
-            due_date = None
-            created_at = datetime.now()
-            completed_at = None
-            
-            for line in lines[1:]:
-                if line.startswith('- Priority: '):
-                    priority = line.replace('- Priority: ', '').strip()
-                elif line.startswith('- Tags: '):
-                    tags = [t.strip() for t in line.replace('- Tags: ', '').split(',')]
-                elif line.startswith('- Due: '):
-                    due_str = line.replace('- Due: ', '').strip()
-                    due_date = datetime.strptime(due_str, '%Y-%m-%d').date()
-                elif line.startswith('- Created: '):
-                    created_str = line.replace('- Created: ', '').strip()
-                    created_at = datetime.strptime(created_str, '%Y-%m-%d %H:%M:%S')
-                elif line.startswith('- Completed: '):
-                    completed_str = line.replace('- Completed: ', '').strip()
-                    completed_at = datetime.strptime(completed_str, '%Y-%m-%d %H:%M:%S')
-                    
-            todo = TodoItem(
-                id=int(id_str),
-                task=task,
-                priority=priority,
-                tags=tags,
-                due_date=due_date,
-                created_at=created_at,
-                completed_at=completed_at
-            )
-            self.todos.append(todo)
+        """Load todos from JSON file"""
+        try:
+            content = self.todo_file.read_text()
+            data = json.loads(content)
+            self.todos = [TodoItem.from_dict(item) for item in data]
+        except (json.JSONDecodeError, FileNotFoundError):
+            # If file doesn't exist or is invalid, start with empty list
+            self.todos = []
             
     def _save_todos(self):
-        # Group todos by date
-        todos_by_date: Dict[str, List[TodoItem]] = {}
+        """Save todos to JSON file"""
+        data = [todo.to_dict() for todo in self.todos]
+        # Sort by ID for consistent file output
+        data.sort(key=lambda x: x['id'])
         
-        for todo in sorted(self.todos, key=lambda t: t.created_at, reverse=True):
-            date_key = todo.created_at.strftime('%Y-%m-%d')
-            if date_key not in todos_by_date:
-                todos_by_date[date_key] = []
-            todos_by_date[date_key].append(todo)
-            
-        # Build markdown content
-        lines = ["# TODOs\n"]
-        
-        for date_key in sorted(todos_by_date.keys(), reverse=True):
-            lines.append(f"## {date_key}\n")
-            for todo in todos_by_date[date_key]:
-                lines.append(todo.to_markdown())
-                lines.append("")
-                
-        self.todo_file.write_text('\n'.join(lines))
+        self.todo_file.write_text(
+            json.dumps(data, indent=2, ensure_ascii=False)
+        )
         
     def add_todo(self, task: str, priority: str = 'medium', 
                  tags: List[str] = None, due_date: Optional[date] = None) -> TodoItem:

@@ -10,7 +10,7 @@ A simple and efficient command-line todo management tool written in Python.
 - 📅 Due date management with smart notifications
 - 🎨 Color-coded output (can be disabled with NO_COLOR=1)
 - ⌨️ Interactive selection with arrow keys
-- 📄 Human-readable Markdown storage format
+- 📄 JSON storage format for reliable data handling
 - 🚀 No external dependencies - uses only Python standard library
 
 ## Installation
@@ -84,21 +84,23 @@ td e
 
 ## Data Storage
 
-Todos are stored in `~/.todo/todos.md` in a human-readable Markdown format:
+Todos are stored in `~/.todo/todos.json` in JSON format:
 
-```markdown
-# TODOs
-
-## 2024-12-20
-
-### [ ] [ID: 1] Task description
-- Priority: high
-- Tags: work, urgent
-- Due: 2024-12-31
-- Created: 2024-12-20 10:30:00
+```json
+[
+  {
+    "id": 1,
+    "task": "Task description",
+    "priority": "high",
+    "tags": ["work", "urgent"],
+    "due_date": "2024-12-31",
+    "created_at": "2024-12-20T10:30:00.000000",
+    "completed_at": null
+  }
+]
 ```
 
-You can edit this file directly with any text editor if needed.
+The JSON format ensures reliable data parsing and allows for easy backup/restore.
 
 ## Interactive Mode
 
@@ -111,6 +113,20 @@ When using `done`, `delete`, or `edit` without an ID:
 
 - Python 3.8 or higher
 - No external dependencies
+
+## Testing
+
+Run the test suite to verify functionality:
+
+```bash
+python3 -m unittest tests.test_todo -v
+```
+
+Tests cover:
+- TodoItem creation, completion, and JSON serialization
+- TodoManager CRUD operations and persistence
+- Data filtering and sorting
+- Error handling and edge cases
 
 ## License
 

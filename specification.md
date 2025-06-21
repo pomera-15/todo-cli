@@ -28,9 +28,9 @@
 - 期限が近いタスクの警告表示
 
 ### 5. データ保存
-- **形式**: Markdown形式で保存
-- **保存場所**: ホームディレクトリの`.todo/todos.md`
-- **人間が読みやすい形式**: 直接エディタで編集可能
+- **形式**: JSON形式で保存
+- **保存場所**: ホームディレクトリの`.todo/todos.json`
+- **信頼性**: データの整合性を保証、パースエラーを防止
 
 ## 技術仕様
 
@@ -38,24 +38,29 @@
 - Python 3.8以上
 
 ### データ形式
-Markdownファイルに以下の形式で保存:
+JSONファイルに以下の形式で保存:
 
-```markdown
-# TODOs
-
-## 2024-12-20
-
-### [ ] [ID: 1] タスク名
-- Priority: high
-- Tags: work, urgent
-- Due: 2024-12-31
-- Created: 2024-12-20 10:30:00
-
-### [x] [ID: 2] 完了したタスク
-- Priority: medium
-- Tags: personal
-- Completed: 2024-12-20 15:00:00
-- Created: 2024-12-20 09:00:00
+```json
+[
+  {
+    "id": 1,
+    "task": "タスク名",
+    "priority": "high",
+    "tags": ["work", "urgent"],
+    "due_date": "2024-12-31",
+    "created_at": "2024-12-20T10:30:00.000000",
+    "completed_at": null
+  },
+  {
+    "id": 2,
+    "task": "完了したタスク",
+    "priority": "medium", 
+    "tags": ["personal"],
+    "due_date": null,
+    "created_at": "2024-12-20T09:00:00.000000",
+    "completed_at": "2024-12-20T15:00:00.000000"
+  }
+]
 ```
 
 ### コマンドライン仕様

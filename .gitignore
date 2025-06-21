@@ -49,6 +49,7 @@ Thumbs.db
 # Project specific
 *.log
 .todo/
+todos.json
 todo
 td
 
